@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>MyContraption Garage</title>
+
+    <!-- Bootstrap core CSS -->
+      <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet"> 
+      <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  </head>
+
+  <body>
+      <div class="container">
+          <div class="row">
+              <div class="col-sm-8">
+                  <div class="panel panel-default">
+                      <div class="panel-heading">
+                          <h3 class="panel-title">Viewer</h3>
+                      </div>
+                      <div class="panel-body" style="height:500px;">
+                          <div class="row">
+                              <div class="col-sm-12">
+                                  <div class="row">
+                                      <div class="col-sm-6">
+                                          <div id="NoDrivers"><p>Welcome!  There are no drivers in queue.  To start driving, please enter your name below.</p></div>
+                                          <div class="alert alert-info" style="display:none;" id="queueStatus" role="alert"></div>
+                                          <div class="alert alert-info" style="display:none;" id="driverStatus" role="alert"></div>
+                                          <div id="timerStatus"></div>
+                                          <div class="progress" id="timerBarWrapper" style="display:none;">
+                                              <div id="timerBar" class="progress-bar progress-bar-striped active" role="progressbar" style="width: 0%">
+                                                  <span class="sr-only"></span>
+                                              </div>
+                                          </div>
+                                          <form id="addUser">
+                                              <label for="username">Your Name:</label>
+                                              <div class="input-group">
+                                                  <input type="text" class="form-control" name="username" id="username">
+                                                  <span class="input-group-btn">
+                                                      <input type="submit" class="btn btn-default" value="Go" />
+                                                  </span>
+                                              </div><!-- /input-group -->
+                                          </form>
+
+                                          <h4>Driver Queue</h4>
+                                          <ul class="list-group" id="currentQueue">
+                                              <!-- Queue goes here -->
+                                          </ul>
+                                          <h4>Status Console</h4>
+                                          <div id="armStatusWrapper" style="height:185px; background-color:#000; color:yellow; overflow-y:auto;">
+                                              <p id="armStatus"></p>
+                                          </div>  
+                                      </div>
+                                      <div class="col-sm-6">
+                                          <canvas id="videoCanvas" width="320" heigfht="240" style="width:320px; height:240px;">
+                                              <p>
+                                                  Please use a browser that supports the Canvas Element, like
+                                                  <a href="http://www.google.com/chrome">Chrome</a>,
+                                                  <a href="http://www.mozilla.com/firefox/">Firefox</a>,
+                                                  <a href="http://www.apple.com/safari/">Safari</a> or Internet Explorer 10
+                                              </p>
+                                          </canvas>
+                                          <div class="thumbnail text-center" style="height:185px;">
+                                              <div class="caption">
+                                                  <h3>Camera Pan Control</h3>
+                                              </div><!--/caption-->
+                                              <div id="base"/>
+                                          </div><!--/thumbnail-->
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div><!--/panel-body-->
+                  </div><!--/panel-default-->
+              </div><!--/col-sm-6-->
+          </div><!--/row-->
+      </div><!--/containter-->
+
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/libraries/jsmpg/jsmpg.js"></script>
+    <script type="text/javascript">
+
+        // Initiate slider control
+        $("#base").slider({
+            disabled: false,
+            max: 180,
+            min: 0,
+            value: 90,
+            change: function (event, ui) {
+                var currentJoint = "base";
+                var degrees = ui.value;
+                iosocket.emit("moveJoint", { joint: currentJoint, deg: degrees });
+            },
+        });
+
+
+		iosocket = io.connect();
+	
+		iosocket.on('updateQueue', function (receivedData) {
+		var userList = receivedData.userList;
+		var userCount = userList.length;
+		var listItems = "";
+		for (var i = 0; i < userCount; i++) {
+			var drivingTag = '';
+			if(i == 0)
+				{
+					drivingTag = " - Driving"
+				}
+			listItems = listItems + "<li class='list-group-item'>" + userList[i].name + drivingTag + "</li>";
+		}
+			$("#currentQueue").html(listItems);
+		});
+		
+		iosocket.on('updateQueueStatus', function (receivedData) {
+			$("#queueStatus").html(receivedData);
+			$("#queueStatus").show(500).delay(2000);
+			$("#queueStatus").hide(500);
+		});
+		
+		iosocket.on('updateDriverStatus', function (receivedData) {
+			$("#driverStatus").html(receivedData);
+			$("#driverStatus").show(500).delay(2000);
+			$("#driverStatus").hide(500);
+		});
+		
+		iosocket.on('updateArmStatus', function (receivedData) {
+			$("#armStatus").append(receivedData + "<br />");
+			$("#armStatusWrapper").animate({ scrollTop: $("#armStatusWrapper").height() }, 1000);
+ 
+		});
+		
+		iosocket.on('updateTimer', function (receivedData) {
+			$("#timerBarWrapper").show();
+			$("#timerStatus").html("Driver change in " + receivedData + " seconds.");
+			var progress = Math.round((90 - receivedData) / 90 * 100);
+			$("#timerBar").css('width', (progress)+'%');
+			
+		});
+		
+		iosocket.on('updateJointCurrent', function (receivedData) {
+			var joint = receivedData.joint;
+			var deg = receivedData.deg;
+			if($("#" + joint).val() != deg)
+			{
+		//		$("#" + joint).val(deg).trigger("change");
+			}
+		});
+		
+	    $( "#addUser" ).submit(function( event ) {
+		     event.preventDefault();
+		     var currentUser = $("#username").val();
+		    iosocket.emit("addUser",currentUser);
+		    $(this).hide(500);
+	    });
+	
+	
+	    var canvas = document.getElementById('videoCanvas');
+		    var ctx = canvas.getContext('2d');
+		    ctx.fillStyle = '#444';
+		    ctx.fillText('Loading...', canvas.width/2-30, canvas.height/3);
+
+		    // Setup the WebSocket connection and start the player
+		    var client = new WebSocket( 'ws://192.168.0.55:8084/' );
+		    var player = new jsmpeg(client, {canvas:canvas});
+		/*
+	    $(".knob").knob({
+            change : function (value) {
+                //console.log("change : " + value);
+            },
+            release : function (value) {
+				var currentJoint = this.$.attr("id");
+				var degrees = value;
+				iosocket.emit("moveJoint",{joint:currentJoint,deg:degrees});
+                console.log(this.$.attr('id') + ":" + value);
+                   
+            },
+            cancel : function () {
+                console.log("cancel : ", this);
+            },
+            format : function (value) {
+                return value + '%';
+            },
+            draw : function () {
+
+                // "tron" case
+                if(this.$.data('skin') == 'tron') {
+
+                    this.cursorExt = 0.3;
+
+                    var a = this.arc(this.cv)  // Arc
+                        , pa                   // Previous arc
+                        , r = 1;
+
+                    this.g.lineWidth = this.lineWidth;
+
+                    if (this.o.displayPrevious) {
+                        pa = this.arc(this.v);
+                        this.g.beginPath();
+                        this.g.strokeStyle = this.pColor;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, pa.s, pa.e, pa.d);
+                        this.g.stroke();
+                    }
+
+                    this.g.beginPath();
+                    this.g.strokeStyle = r ? this.o.fgColor : this.fgColor ;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, a.s, a.e, a.d);
+                    this.g.stroke();
+
+                    this.g.lineWidth = 2;
+                    this.g.beginPath();
+                    this.g.strokeStyle = this.o.fgColor;
+                    this.g.arc( this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+                    this.g.stroke();
+
+                    return false;
+                }
+            }
+        });*/
+</script>
+</body>
+</html>
