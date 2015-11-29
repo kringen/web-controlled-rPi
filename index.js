@@ -6,7 +6,6 @@ var app = express();
 
 var socketServer;
 var serialPort;
-//var portName = '/dev/ttyUSB0'; //change this to your Arduino port
 var sendData = "";
 var userArray = [];
 var timerCounter = 60;
@@ -19,14 +18,13 @@ app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname + '/pages/index.html'));
 });
 
-app.use(express.static('pages')); // All other requests will get routed to the pages directory first.
-
+app.use("/libraries", express.static(__dirname + '/pages/libraries'));
 
 var httpServer = app.listen(51865, function () {
     var host = httpServer.address().address;
     var port = httpServer.address().port;
 
-    console.log('Example app listening at http://%s:%s', host, port);
+    console.log('Web controlled Raspberry Pi listening at http://%s:%s', host, port);
 });
 
 try {
