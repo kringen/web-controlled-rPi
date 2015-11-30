@@ -21,7 +21,7 @@
               <div class="col-sm-8">
                   <div class="panel panel-default">
                       <div class="panel-heading">
-                          <h3 class="panel-title">Viewer</h3>
+                          <h3 class="panel-title">MyContraption Garage Cam</h3>
                       </div>
                       <div class="panel-body" style="height:500px;">
                           <div class="row">
@@ -76,6 +76,9 @@
                               </div>
                           </div>
                       </div><!--/panel-body-->
+                  <div class="panel-footer">
+                      <span id="max-concurrent"></span>
+                  </div>
                   </div><!--/panel-default-->
               </div><!--/col-sm-6-->
           </div><!--/row-->
@@ -144,6 +147,12 @@
 			$("#timerBar").css('width', (progress)+'%');
 			
 		});
+
+		iosocket.on("updateMaxConcurrent", function (receivedData) {
+		    //var dateStr = JSON.parse(receivedData.startDate);
+		    var date = new Date(receivedData.startDate);
+		    $("#max-concurrent").html("Max concurrent users since " + date.toLocaleDateString("en-US") + ": " + receivedData.maxConcurrentUsers);
+		});
 		
 		iosocket.on('updateJointCurrent', function (receivedData) {
 			var joint = receivedData.joint;
@@ -170,60 +179,7 @@
 		    // Setup the WebSocket connection and start the player
 		    var client = new WebSocket( 'ws://192.168.0.55:8084/' );
 		    var player = new jsmpeg(client, {canvas:canvas});
-		/*
-	    $(".knob").knob({
-            change : function (value) {
-                //console.log("change : " + value);
-            },
-            release : function (value) {
-				var currentJoint = this.$.attr("id");
-				var degrees = value;
-				iosocket.emit("moveJoint",{joint:currentJoint,deg:degrees});
-                console.log(this.$.attr('id') + ":" + value);
-                   
-            },
-            cancel : function () {
-                console.log("cancel : ", this);
-            },
-            format : function (value) {
-                return value + '%';
-            },
-            draw : function () {
-
-                // "tron" case
-                if(this.$.data('skin') == 'tron') {
-
-                    this.cursorExt = 0.3;
-
-                    var a = this.arc(this.cv)  // Arc
-                        , pa                   // Previous arc
-                        , r = 1;
-
-                    this.g.lineWidth = this.lineWidth;
-
-                    if (this.o.displayPrevious) {
-                        pa = this.arc(this.v);
-                        this.g.beginPath();
-                        this.g.strokeStyle = this.pColor;
-                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, pa.s, pa.e, pa.d);
-                        this.g.stroke();
-                    }
-
-                    this.g.beginPath();
-                    this.g.strokeStyle = r ? this.o.fgColor : this.fgColor ;
-                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, a.s, a.e, a.d);
-                    this.g.stroke();
-
-                    this.g.lineWidth = 2;
-                    this.g.beginPath();
-                    this.g.strokeStyle = this.o.fgColor;
-                    this.g.arc( this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
-                    this.g.stroke();
-
-                    return false;
-                }
-            }
-        });*/
+		
 </script>
 </body>
 </html>
